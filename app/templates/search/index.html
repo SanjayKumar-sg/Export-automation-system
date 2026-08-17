@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}Buyer Search — Export Automation System{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item active">Buyer Search</li>{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Buyer Search</h1>
+    <p class="page-subtitle">Discover buyers from Google, LinkedIn, Facebook &amp; Business Directories</p>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Search Config Panel -->
+  <div class="col-lg-4">
+    <div class="card-glass p-4">
+      <h6 class="section-title mb-3"><i class="bi bi-sliders me-2"></i>Search Configuration</h6>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Product Keyword</label>
+        <input type="text" class="form-control" id="searchKeyword" value="{{ keyword }}" placeholder="e.g. Singing Bowls"/>
+        <div class="form-text">The product to search buyers for</div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Maximum Results</label>
+        <input type="number" class="form-control" id="maxResults" value="{{ max_results }}" min="10" max="500"/>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Search Sources</label>
+        {% for source in sources %}
+        <div class="form-check">
+          <input class="form-check-input source-check" type="checkbox" value="{{ source }}"
+                 id="src_{{ source }}" checked/>
+          <label class="form-check-label text-capitalize" for="src_{{ source }}">
+            <i class="bi bi-{% if source == 'google' %}google{% elif source == 'facebook' %}facebook{% elif source == 'linkedin' %}linkedin{% elif source == 'directory' %}building{% else %}globe{% endif %} me-1"></i>
+            {{ source | capitalize }}
+          </label>
+        </div>
+        {% endfor %}
+      </div>
+
+      <div class="d-grid gap-2">
+        <button class="btn btn-primary" id="btnStart">
+          <i class="bi bi-play-fill me-2"></i>Start Search
+        </button>
+        <div class="d-flex gap-2">
+          <button class="btn btn-warning flex-fill d-none" id="btnPause">
+            <i class="bi bi-pause-fill"></i> Pause
+          </button>
+          <button class="btn btn-success flex-fill d-none" id="btnResume">
+            <i class="bi bi-play-fill"></i> Resume
+          </button>
+          <button class="btn btn-danger flex-fill d-none" id="btnCancel">
+            <i class="bi bi-x-lg"></i> Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Live Progress Panel -->
+  <div class="col-lg-8">
+    <div class="card-glass p-4 mb-4">
+      <h6 class="section-title mb-3"><i class="bi bi-activity me-2"></i>Live Progress</h6>
+
+      <div class="mb-3">
+        <div class="d-flex justify-content-between mb-1">
+          <span class="small" id="progressLabel">Ready to search…</span>
+          <span class="small fw-semibold" id="progressPct">0%</span>
+        </div>
+        <div class="progress" style="height:10px">
+          <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+               id="progressBar" style="width:0%"></div>
+        </div>
+      </div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-4">
+          <div class="stat-mini">
+            <div class="stat-mini-value text-info" id="statFound">0</div>
+            <div class="stat-mini-label">Discovered</div>
+          </div>
+        </div>
+        <div class="col-4">
+          <div class="stat-mini">
+            <div class="stat-mini-value text-success" id="statSaved">0</div>
+            <div class="stat-mini-label">Saved</div>
+          </div>
+        </div>
+        <div class="col-4">
+          <div class="stat-mini">
+            <div class="stat-mini-value text-warning" id="statSource">—</div>
+            <div class="stat-mini-label">Current Source</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search Log -->
+    <div class="card-glass p-4">
+      <h6 class="section-title mb-2"><i class="bi bi-terminal me-2"></i>Search Log</h6>
+      <div id="searchLog" class="log-console" style="height:280px; overflow-y:auto;">
+        <span class="text-muted fst-italic">Waiting for search to start…</span>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/search.js') }}"></script>
+{% endblock %}

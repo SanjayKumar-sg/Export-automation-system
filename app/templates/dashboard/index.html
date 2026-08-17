@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Export Automation System{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item active">Dashboard</li>{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Dashboard</h1>
+    <p class="page-subtitle">Real-time overview of your export automation pipeline</p>
+  </div>
+  <div class="d-flex gap-2">
+    <button class="btn btn-outline-secondary btn-sm" id="refreshStats">
+      <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+    </button>
+  </div>
+</div>
+
+<!-- ── KPI Cards ─────────────────────────────────────────────────────── -->
+<div class="row g-4 mb-4">
+  <div class="col-6 col-md-4 col-xl-2">
+    <div class="kpi-card kpi-blue">
+      <div class="kpi-icon"><i class="bi bi-people-fill"></i></div>
+      <div class="kpi-value" id="totalBuyers">{{ stats.total_buyers }}</div>
+      <div class="kpi-label">Total Buyers</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-xl-2">
+    <div class="kpi-card kpi-green">
+      <div class="kpi-icon"><i class="bi bi-building"></i></div>
+      <div class="kpi-value" id="businessEmails">{{ stats.business_emails }}</div>
+      <div class="kpi-label">Business Emails</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-xl-2">
+    <div class="kpi-card kpi-purple">
+      <div class="kpi-icon"><i class="bi bi-person-fill"></i></div>
+      <div class="kpi-value" id="individualEmails">{{ stats.individual_emails }}</div>
+      <div class="kpi-label">Individual Emails</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-xl-2">
+    <div class="kpi-card kpi-cyan">
+      <div class="kpi-icon"><i class="bi bi-send-check-fill"></i></div>
+      <div class="kpi-value" id="sentToday">{{ stats.sent_today }}</div>
+      <div class="kpi-label">Sent Today</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-xl-2">
+    <div class="kpi-card kpi-red">
+      <div class="kpi-icon"><i class="bi bi-x-circle-fill"></i></div>
+      <div class="kpi-value" id="failedToday">{{ stats.failed_today }}</div>
+      <div class="kpi-label">Failed</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-xl-2">
+    <div class="kpi-card kpi-yellow">
+      <div class="kpi-icon"><i class="bi bi-clock-fill"></i></div>
+      <div class="kpi-value" id="pending">{{ stats.pending }}</div>
+      <div class="kpi-label">Pending</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Pipeline Status ───────────────────────────────────────────────── -->
+<div class="row g-4 mb-4">
+  <div class="col-12">
+    <div class="card-glass p-4">
+      <h6 class="section-title mb-3"><i class="bi bi-diagram-3-fill me-2"></i>Pipeline Status</h6>
+      <div class="pipeline-flow">
+        {% set steps = [
+          ('search.index', 'bi-search', 'Search', stats.total_buyers ~ ' Found'),
+          ('validation.index', 'bi-shield-check', 'Validate', stats.valid_emails ~ ' Valid'),
+          ('classification.index', 'bi-stars', 'AI Classify', stats.business_emails ~ ' Business'),
+          ('campaigns.builder', 'bi-envelope-paper', 'Campaign', '—'),
+          ('send.index', 'bi-send-fill', 'Send', stats.sent_today ~ ' Today'),
+          ('reports.index', 'bi-bar-chart', 'Report', '—'),
+        ] %}
+        {% for endpoint, icon, label, meta in steps %}
+          <a href="{{ url_for(endpoint) }}" class="pipeline-step">
+            <div class="ps-icon"><i class="bi {{ icon }}"></i></div>
+            <div class="ps-label">{{ label }}</div>
+            <div class="ps-meta">{{ meta }}</div>
+          </a>
+          {% if not loop.last %}<div class="pipeline-arrow"><i class="bi bi-chevron-right"></i></div>{% endif %}
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Charts Row ────────────────────────────────────────────────────── -->
+<div class="row g-4 mb-4">
+  <div class="col-lg-8">
+    <div class="card-glass p-4">
+      <h6 class="section-title mb-3"><i class="bi bi-send-fill me-2"></i>Daily Email Sends (Last 7 Days)</h6>
+      <canvas id="dailySendsChart" height="110"></canvas>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card-glass p-4">
+      <h6 class="section-title mb-3"><i class="bi bi-pie-chart-fill me-2"></i>Source Distribution</h6>
+      <canvas id="sourceChart" height="180"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-lg-6">
+    <div class="card-glass p-4">
+      <h6 class="section-title mb-3"><i class="bi bi-stars me-2"></i>Classification Distribution</h6>
+      <canvas id="classChart" height="160"></canvas>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card-glass p-4">
+      <h6 class="section-title mb-3"><i class="bi bi-geo-alt-fill me-2"></i>Top Countries</h6>
+      <canvas id="countryChart" height="160"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- ── Quick Actions ─────────────────────────────────────────────────── -->
+<div class="row g-4">
+  <div class="col-12">
+    <div class="card-glass p-4">
+      <h6 class="section-title mb-3"><i class="bi bi-lightning-fill me-2"></i>Quick Actions</h6>
+      <div class="d-flex flex-wrap gap-2">
+        <a href="{{ url_for('search.index') }}" class="btn btn-primary"><i class="bi bi-search me-2"></i>New Search</a>
+        <a href="{{ url_for('validation.index') }}" class="btn btn-outline-success"><i class="bi bi-shield-check me-2"></i>Validate Emails</a>
+        <a href="{{ url_for('classification.index') }}" class="btn btn-outline-info"><i class="bi bi-stars me-2"></i>AI Classify</a>
+        <a href="{{ url_for('campaigns.builder') }}" class="btn btn-outline-warning"><i class="bi bi-envelope-paper me-2"></i>New Campaign</a>
+        <a href="{{ url_for('reports.index') }}" class="btn btn-outline-secondary"><i class="bi bi-download me-2"></i>Export Report</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+<script id="stats-data" type="application/json">
+{{ stats | tojson | safe }}
+</script>
+<script>
+// Inline chart data from Jinja
+const STATS = JSON.parse(document.getElementById('stats-data').textContent);
+initDashboardCharts(STATS);
+</script>
+{% endblock %}

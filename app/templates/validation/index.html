@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Email Validation — Export Automation System{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item active">Validation</li>{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Email Validation</h1>
+    <p class="page-subtitle">Validate, deduplicate, and categorise buyer email addresses</p>
+  </div>
+  <div class="d-flex gap-2">
+    <button class="btn btn-primary" id="btnValidateAll">
+      <i class="bi bi-shield-check me-2"></i>Validate All
+    </button>
+  </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row g-3 mb-4" id="validationStats">
+  {% set status_map = {
+    'valid': ('success', 'bi-check-circle-fill', 'Valid'),
+    'invalid': ('danger', 'bi-x-circle-fill', 'Invalid'),
+    'duplicate': ('warning', 'bi-copy', 'Duplicate'),
+    'disposable': ('orange', 'bi-trash-fill', 'Disposable'),
+    'unverified': ('secondary', 'bi-question-circle-fill', 'Unverified'),
+    'missing': ('dark', 'bi-dash-circle-fill', 'Missing'),
+  } %}
+  {% for key, (color, icon, label) in status_map.items() %}
+  <div class="col-6 col-md-4 col-xl-2">
+    <div class="kpi-card" {{ 'style="border-top-color: var(--bs-' ~ color ~ ')"' | safe }}>
+      <div class="kpi-icon text-{{ color }}"><i class="bi {{ icon }}"></i></div>
+      <div class="kpi-value" id="stat_{{ key }}">{{ stats.get(key, 0) }}</div>
+      <div class="kpi-label">{{ label }}</div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Validation Progress (hidden until run) -->
+<div class="card-glass p-4 mb-4 d-none" id="validationProgress">
+  <h6 class="section-title mb-3"><i class="bi bi-activity me-2"></i>Validation in Progress…</h6>
+  <div class="progress mb-2" style="height:10px">
+    <div class="progress-bar progress-bar-striped progress-bar-animated bg-success"
+         id="valProgressBar" style="width:0%"></div>
+  </div>
+  <p class="text-muted small" id="valProgressText">Processing…</p>
+</div>
+
+<!-- Status Filter Tabs + Table -->
+<div class="card-glass">
+  <div class="d-flex align-items-center gap-2 px-4 pt-3 pb-2 flex-wrap">
+    <h6 class="section-title mb-0 me-3"><i class="bi bi-table me-2"></i>Buyers by Status</h6>
+    {% for key, (color, icon, label) in status_map.items() %}
+    <button class="btn btn-sm btn-outline-{{ color }} status-filter-btn {% if loop.first %}active{% endif %}"
+            data-status="{{ key }}">
+      <i class="bi {{ icon }} me-1"></i>{{ label }}
+      <span class="badge bg-{{ color }} ms-1">{{ stats.get(key, 0) }}</span>
+    </button>
+    {% endfor %}
+    <button class="btn btn-sm btn-outline-secondary status-filter-btn" data-status="">
+      All
+    </button>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>Company</th>
+          <th>Status</th>
+          <th>Error</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="validationTableBody">
+        <tr><td colspan="5" class="text-center py-4 text-muted">
+          <i class="bi bi-arrow-repeat fs-2 d-block mb-2"></i>
+          Click "Validate All" or select a status filter to view buyers.
+        </td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/validation.js') }}"></script>
+{% endblock %}

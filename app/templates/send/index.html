@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}Send Emails — Export Automation System{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item active">Send Emails</li>{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Campaign Monitor</h1>
+    <p class="page-subtitle">Live email campaign execution and monitoring</p>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Campaign Selector -->
+  <div class="col-lg-4">
+    <div class="card-glass p-4 mb-4">
+      <h6 class="section-title mb-3"><i class="bi bi-envelope-paper-fill me-2"></i>Select Campaign</h6>
+      <select class="form-select mb-3" id="campaignSelect">
+        <option value="">— Choose a campaign —</option>
+        {% for c in campaigns %}
+          <option value="{{ c.id }}">{{ c.name }} ({{ c.audience }} | {{ c.status }})</option>
+        {% endfor %}
+      </select>
+      <div class="d-grid gap-2">
+        <button class="btn btn-success" id="btnStartCampaign">
+          <i class="bi bi-play-fill me-2"></i>Start Sending
+        </button>
+        <div class="d-flex gap-2">
+          <button class="btn btn-warning flex-fill d-none" id="btnPauseSend">
+            <i class="bi bi-pause-fill"></i> Pause
+          </button>
+          <button class="btn btn-primary flex-fill d-none" id="btnResumeSend">
+            <i class="bi bi-play-fill"></i> Resume
+          </button>
+          <button class="btn btn-danger flex-fill d-none" id="btnStopSend">
+            <i class="bi bi-stop-fill"></i> Stop
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SMTP Status -->
+    <div class="card-glass p-4">
+      <h6 class="section-title mb-3"><i class="bi bi-wifi me-2"></i>SMTP Status</h6>
+      <div class="d-flex align-items-center gap-2">
+        <div class="status-dot" id="smtpDot" style="background: var(--bs-secondary)"></div>
+        <span id="smtpStatus">Not connected</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Live Monitor -->
+  <div class="col-lg-8">
+    <div class="card-glass p-4 mb-4">
+      <h6 class="section-title mb-3"><i class="bi bi-activity me-2"></i>Live Monitor</h6>
+
+      <!-- Progress -->
+      <div class="mb-3">
+        <div class="d-flex justify-content-between mb-1">
+          <span class="small" id="sendProgressLabel">Ready…</span>
+          <span class="small fw-semibold" id="sendProgressPct">0%</span>
+        </div>
+        <div class="progress mb-1" style="height:12px">
+          <div class="progress-bar bg-success" id="sendProgressBar" style="width:0%"></div>
+        </div>
+        <div class="text-muted small" id="sendETA">—</div>
+      </div>
+
+      <!-- Stats -->
+      <div class="row g-3 mb-3">
+        <div class="col-3">
+          <div class="stat-mini">
+            <div class="stat-mini-value" id="sTotal">0</div>
+            <div class="stat-mini-label">Total</div>
+          </div>
+        </div>
+        <div class="col-3">
+          <div class="stat-mini">
+            <div class="stat-mini-value text-success" id="sSent">0</div>
+            <div class="stat-mini-label">Sent</div>
+          </div>
+        </div>
+        <div class="col-3">
+          <div class="stat-mini">
+            <div class="stat-mini-value text-danger" id="sFailed">0</div>
+            <div class="stat-mini-label">Failed</div>
+          </div>
+        </div>
+        <div class="col-3">
+          <div class="stat-mini">
+            <div class="stat-mini-value text-warning" id="sCurrentRecipient" style="font-size:.85rem; word-break:break-all">—</div>
+            <div class="stat-mini-label">Current</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Send Log -->
+    <div class="card-glass p-4">
+      <h6 class="section-title mb-2"><i class="bi bi-terminal me-2"></i>Send Log</h6>
+      <div id="sendLog" class="log-console" style="height:300px; overflow-y:auto;">
+        <span class="text-muted fst-italic">Waiting for campaign to start…</span>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/send.js') }}"></script>
+{% endblock %}

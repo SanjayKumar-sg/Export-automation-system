@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}AI Classification — Export Automation System{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item active">AI Classification</li>{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">AI Classification <span class="badge bg-gradient-primary ms-2">Gemini</span></h1>
+    <p class="page-subtitle">Classify buyers into business/individual using Google Gemini AI</p>
+  </div>
+  <div class="d-flex gap-2">
+    <button class="btn btn-primary" id="btnStartClassify">
+      <i class="bi bi-stars me-2"></i>Run Classification
+    </button>
+  </div>
+</div>
+
+<!-- Stat Cards -->
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="kpi-card kpi-blue">
+      <div class="kpi-icon"><i class="bi bi-hourglass-split"></i></div>
+      <div class="kpi-value">{{ unclassified }}</div>
+      <div class="kpi-label">Awaiting Classification</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="kpi-card kpi-green">
+      <div class="kpi-icon"><i class="bi bi-check2-all"></i></div>
+      <div class="kpi-value">{{ classified }}</div>
+      <div class="kpi-label">Classified</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="kpi-card kpi-purple">
+      <div class="kpi-icon"><i class="bi bi-cpu"></i></div>
+      <div class="kpi-value" id="totalTokens">0</div>
+      <div class="kpi-label">Tokens Used</div>
+    </div>
+  </div>
+</div>
+
+<!-- Config + Progress -->
+<div class="row g-4 mb-4">
+  <div class="col-lg-4">
+    <div class="card-glass p-4">
+      <h6 class="section-title mb-3"><i class="bi bi-sliders me-2"></i>Configuration</h6>
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Batch Size</label>
+        <input type="number" class="form-control" id="batchSize" value="20" min="1" max="100"/>
+        <div class="form-text">Buyers to classify per API call group</div>
+      </div>
+      <div class="alert alert-info py-2 px-3 small">
+        <i class="bi bi-info-circle me-1"></i>
+        Rate limit: ~2 requests/second to avoid 429 errors.
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="card-glass p-4">
+      <h6 class="section-title mb-3"><i class="bi bi-activity me-2"></i>Classification Progress</h6>
+
+      <div class="d-none" id="classifyProgress">
+        <div class="d-flex justify-content-between mb-1">
+          <span class="small" id="classifyLabel">Running…</span>
+          <span class="small fw-semibold" id="classifyPct">0%</span>
+        </div>
+        <div class="progress mb-3" style="height:10px">
+          <div class="progress-bar progress-bar-striped progress-bar-animated bg-info"
+               id="classifyBar" style="width:0%"></div>
+        </div>
+        <div class="row g-3">
+          <div class="col-4">
+            <div class="stat-mini">
+              <div class="stat-mini-value text-success" id="cStatClassified">0</div>
+              <div class="stat-mini-label">Classified</div>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="stat-mini">
+              <div class="stat-mini-value text-danger" id="cStatFailed">0</div>
+              <div class="stat-mini-label">Failed</div>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="stat-mini">
+              <div class="stat-mini-value text-purple" id="cStatTokens">0</div>
+              <div class="stat-mini-label">Tokens</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="classifyIdle" class="text-center py-4 text-muted">
+        <i class="bi bi-stars fs-2 d-block mb-2"></i>
+        Click "Run Classification" to start the AI analysis.
+      </div>
+
+      <!-- Log -->
+      <div id="classifyLog" class="log-console mt-3 d-none" style="height:180px; overflow-y:auto;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Classification Distribution Chart -->
+<div class="card-glass p-4">
+  <h6 class="section-title mb-3"><i class="bi bi-pie-chart-fill me-2"></i>Classification Distribution</h6>
+  <canvas id="classDistChart" height="80"></canvas>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/classification.js') }}"></script>
+{% endblock %}

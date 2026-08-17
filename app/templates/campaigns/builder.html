@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+{% block title %}Campaign Builder — Export Automation System{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('campaigns.index') }}">Campaigns</a></li>
+<li class="breadcrumb-item active">Builder</li>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ 'Edit Campaign' if campaign else 'Campaign Builder' }}</h1>
+    <p class="page-subtitle">Design and configure your email campaign</p>
+  </div>
+  <div class="d-flex gap-2">
+    <button class="btn btn-outline-secondary" id="btnPreview">
+      <i class="bi bi-eye me-1"></i>Preview
+    </button>
+    <button class="btn btn-success" id="btnSaveCampaign">
+      <i class="bi bi-floppy me-1"></i>Save Campaign
+    </button>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Left: Campaign Config -->
+  <div class="col-lg-7">
+    <input type="hidden" id="campaignId" value="{{ campaign.id if campaign else '' }}"/>
+
+    <div class="card-glass p-4 mb-4">
+      <h6 class="section-title mb-3"><i class="bi bi-info-circle me-2"></i>Campaign Details</h6>
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Campaign Name *</label>
+        <input type="text" class="form-control" id="campaignName"
+               value="{{ campaign.name if campaign else '' }}"
+               placeholder="e.g. Summer Outreach 2025"/>
+      </div>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Audience</label>
+          <select class="form-select" id="campaignAudience">
+            <option value="all" {% if campaign and campaign.audience == 'all' %}selected{% endif %}>All Valid Buyers</option>
+            <option value="business" {% if campaign and campaign.audience == 'business' %}selected{% endif %}>Business Only</option>
+            <option value="individual" {% if campaign and campaign.audience == 'individual' %}selected{% endif %}>Individual Only</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label fw-semibold">Daily Limit</label>
+          <input type="number" class="form-control" id="dailyLimit"
+                 value="{{ campaign.daily_limit if campaign else 200 }}" min="1" max="500"/>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label fw-semibold">Delay (s)</label>
+          <input type="number" class="form-control" id="delaySeconds"
+                 value="{{ campaign.delay_seconds if campaign else 3 }}" min="1" max="60"/>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-glass p-4 mb-4">
+      <h6 class="section-title mb-3"><i class="bi bi-envelope-fill me-2"></i>Email Content</h6>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Subject Line *</label>
+        <input type="text" class="form-control" id="emailSubject"
+               value="{{ campaign.subject if campaign else '' }}"
+               placeholder="e.g. Partnership Opportunity — {{company}}"/>
+        <div class="form-text">
+          Use tokens: <code>{{name}}</code> <code>{{company}}</code> <code>{{country}}</code>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <div class="d-flex justify-content-between mb-1">
+          <label class="form-label fw-semibold mb-0">Email Body (HTML)</label>
+          <div class="btn-group btn-group-sm">
+            <button class="btn btn-outline-secondary active" id="btnHtmlMode">HTML</button>
+            <button class="btn btn-outline-secondary" id="btnPreviewMode">Preview</button>
+          </div>
+        </div>
+        <textarea class="form-control font-monospace" id="emailBody" rows="12"
+                  placeholder="<p>Dear {{name}},</p>...">{{ campaign.body_html if campaign else '' }}</textarea>
+        <div id="emailBodyPreview" class="border rounded p-3 bg-body d-none" style="min-height:200px"></div>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">CC (optional)</label>
+          <input type="text" class="form-control" id="emailCc"
+                 value="{{ campaign.cc if campaign else '' }}"
+                 placeholder="cc@example.com"/>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">BCC (optional)</label>
+          <input type="text" class="form-control" id="emailBcc"
+                 value="{{ campaign.bcc if campaign else '' }}"
+                 placeholder="bcc@example.com"/>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: Template + Attachment + Test -->
+  <div class="col-lg-5">
+    <!-- Load Template -->
+    <div class="card-glass p-4 mb-4">
+      <h6 class="section-title mb-3"><i class="bi bi-file-earmark-richtext me-2"></i>Load Template</h6>
+      <select class="form-select mb-2" id="templateSelect">
+        <option value="">— Select a template —</option>
+        {% for tpl in templates %}
+          <option value="{{ tpl.id }}"
+                  data-subject="{{ tpl.subject }}"
+                  data-body="{{ tpl.body_html | e }}">
+            {{ tpl.name }}
+          </option>
+        {% endfor %}
+      </select>
+      <button class="btn btn-outline-secondary btn-sm" id="btnLoadTemplate">
+        <i class="bi bi-arrow-down-circle me-1"></i>Apply Template
+      </button>
+    </div>
+
+    <!-- Attachment -->
+    <div class="card-glass p-4 mb-4">
+      <h6 class="section-title mb-3"><i class="bi bi-paperclip me-2"></i>Attachment</h6>
+      <select class="form-select" id="attachmentSelect">
+        <option value="">No Attachment</option>
+        {% for att in attachments %}
+          <option value="{{ att.id }}"
+                  {% if campaign and campaign.attachment_id == att.id %}selected{% endif %}>
+            {{ att.original_filename }} ({{ att.human_size }})
+          </option>
+        {% endfor %}
+      </select>
+      <div class="mt-2">
+        <a href="{{ url_for('attachments.index') }}" class="small text-muted">
+          <i class="bi bi-upload me-1"></i>Upload new attachment
+        </a>
+      </div>
+    </div>
+
+    <!-- Send Test Email -->
+    <div class="card-glass p-4 mb-4">
+      <h6 class="section-title mb-3"><i class="bi bi-send me-2"></i>Send Test Email</h6>
+      <div class="mb-2">
+        <input type="email" class="form-control" id="testEmailTo" placeholder="your@email.com"/>
+      </div>
+      <button class="btn btn-outline-primary w-100" id="btnSendTest">
+        <i class="bi bi-send me-2"></i>Send Test
+      </button>
+      <div id="testEmailResult" class="mt-2"></div>
+    </div>
+
+    <!-- Token Reference -->
+    <div class="card-glass p-4">
+      <h6 class="section-title mb-2"><i class="bi bi-braces me-2"></i>Available Tokens</h6>
+      <div class="d-flex flex-wrap gap-2">
+        {% for token in ['name', 'company', 'country', 'email'] %}
+          {% set token_str = "{{" ~ token ~ "}}" %}
+          <code class="token-chip" onclick="insertToken('{{ token_str }}')">{{ token_str }}</code>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Preview Modal -->
+<div class="modal fade" id="previewModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-eye me-2"></i>Email Preview</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-2 small text-muted">
+          <strong>Subject:</strong> <span id="previewSubject"></span>
+        </div>
+        <hr/>
+        <iframe id="previewFrame" style="width:100%; height:400px; border:none;"></iframe>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/campaign.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Profile — Export Automation System{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item active">Profile</li>{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div><h1 class="page-title">My Profile</h1></div>
+</div>
+
+<div class="row g-4">
+  <!-- Profile Card -->
+  <div class="col-lg-4">
+    <div class="card-glass p-4 text-center">
+      <div class="avatar-lg mx-auto mb-3">{{ user.username[0].upper() }}</div>
+      <h5 class="fw-bold">{{ user.username }}</h5>
+      <p class="text-muted">{{ user.email }}</p>
+      <span class="badge bg-primary">{{ user.role | upper }}</span>
+      <hr/>
+      <ul class="list-unstyled text-start small">
+        <li class="d-flex justify-content-between py-1">
+          <span class="text-muted">Member Since</span>
+          <strong>{{ user.created_at.strftime('%d %b %Y') if user.created_at else '—' }}</strong>
+        </li>
+        <li class="d-flex justify-content-between py-1">
+          <span class="text-muted">Last Login</span>
+          <strong>{{ user.last_login.strftime('%d %b %Y %H:%M') if user.last_login else 'Now' }}</strong>
+        </li>
+        <li class="d-flex justify-content-between py-1">
+          <span class="text-muted">Status</span>
+          <span class="badge {% if user.is_active %}bg-success{% else %}bg-danger{% endif %}">
+            {% if user.is_active %}Active{% else %}Inactive{% endif %}
+          </span>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <!-- Update Username -->
+    <div class="card-glass p-4 mb-4">
+      <h6 class="section-title mb-3"><i class="bi bi-person-fill me-2"></i>Update Profile</h6>
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Username</label>
+        <input type="text" class="form-control" id="newUsername" value="{{ user.username }}"/>
+      </div>
+      <button class="btn btn-primary" id="btnUpdateProfile">
+        <i class="bi bi-check2 me-1"></i>Update
+      </button>
+      <div id="profileMsg" class="mt-2"></div>
+    </div>
+
+    <!-- Change Password -->
+    <div class="card-glass p-4">
+      <h6 class="section-title mb-3"><i class="bi bi-lock-fill me-2"></i>Change Password</h6>
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Current Password</label>
+        <input type="password" class="form-control" id="currentPw"/>
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-semibold">New Password</label>
+        <input type="password" class="form-control" id="newPw"/>
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Confirm New Password</label>
+        <input type="password" class="form-control" id="confirmPw"/>
+      </div>
+      <button class="btn btn-warning" id="btnChangePw">
+        <i class="bi bi-shield-lock me-1"></i>Change Password
+      </button>
+      <div id="pwMsg" class="mt-2"></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('btnUpdateProfile').addEventListener('click', function() {
+  fetch('{{ url_for("profile.update") }}', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json','X-CSRFToken': getCsrfToken()},
+    body: JSON.stringify({username: document.getElementById('newUsername').value})
+  }).then(r=>r.json()).then(d=>{
+    document.getElementById('profileMsg').innerHTML =
+      '<div class="alert alert-success py-1 small">Profile updated!</div>';
+  });
+});
+
+document.getElementById('btnChangePw').addEventListener('click', function() {
+  const data = {
+    current_password: document.getElementById('currentPw').value,
+    new_password: document.getElementById('newPw').value,
+    confirm_password: document.getElementById('confirmPw').value,
+  };
+  fetch('{{ url_for("profile.change_password") }}', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json','X-CSRFToken': getCsrfToken()},
+    body: JSON.stringify(data)
+  }).then(r=>r.json()).then(d=>{
+    const ok = d.status === 'ok';
+    document.getElementById('pwMsg').innerHTML =
+      `<div class="alert alert-${ok?'success':'danger'} py-1 small">${d.message}</div>`;
+    if (ok) { ['currentPw','newPw','confirmPw'].forEach(id=>document.getElementById(id).value=''); }
+  });
+});
+</script>
+{% endblock %}

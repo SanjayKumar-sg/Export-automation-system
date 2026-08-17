@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% block title %}Buyer Database — Export Automation System{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item active">Buyer Database</li>{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Buyer Database</h1>
+    <p class="page-subtitle">{{ pagination.total }} buyer records found</p>
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    <a href="{{ url_for('buyers.export_csv') }}" class="btn btn-outline-success btn-sm">
+      <i class="bi bi-filetype-csv me-1"></i>Export CSV
+    </a>
+    <a href="{{ url_for('buyers.export_excel') }}" class="btn btn-outline-primary btn-sm">
+      <i class="bi bi-file-earmark-excel me-1"></i>Export Excel
+    </a>
+    <button class="btn btn-outline-danger btn-sm" id="btnBulkDelete" disabled>
+      <i class="bi bi-trash me-1"></i>Bulk Delete (<span id="selectedCount">0</span>)
+    </button>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="card-glass p-3 mb-4">
+  <form method="GET" action="{{ url_for('buyers.index') }}" class="row g-2 align-items-end">
+    <div class="col-md-4">
+      <input type="text" class="form-control" name="q" placeholder="Search email, company…" value="{{ search }}"/>
+    </div>
+    <div class="col-md-2">
+      <select class="form-select" name="country">
+        <option value="">All Countries</option>
+        {% for c in countries %}
+          <option value="{{ c }}" {% if c == country %}selected{% endif %}>{{ c }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <select class="form-select" name="status">
+        <option value="">All Statuses</option>
+        {% for s in ['valid','invalid','duplicate','disposable','unverified','missing'] %}
+          <option value="{{ s }}" {% if s == status %}selected{% endif %}>{{ s | capitalize }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <select class="form-select" name="buyer_type">
+        <option value="">All Types</option>
+        {% for t in types %}
+          <option value="{{ t }}" {% if t == buyer_type %}selected{% endif %}>{{ t | capitalize }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <button type="submit" class="btn btn-primary w-100">
+        <i class="bi bi-funnel me-1"></i>Filter
+      </button>
+    </div>
+  </form>
+</div>
+
+<!-- Table -->
+<div class="card-glass">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0" id="buyersTable">
+      <thead>
+        <tr>
+          <th width="40"><input type="checkbox" class="form-check-input" id="selectAll"/></th>
+          <th>Email</th>
+          <th>Company</th>
+          <th>Website</th>
+          <th>Country</th>
+          <th>Source</th>
+          <th>Status</th>
+          <th>Type</th>
+          <th>Added</th>
+          <th width="80">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for buyer in buyers %}
+        <tr data-id="{{ buyer.id }}">
+          <td><input type="checkbox" class="form-check-input row-check" value="{{ buyer.id }}"/></td>
+          <td>
+            <span class="fw-semibold">{{ buyer.email }}</span>
+            {% if buyer.is_duplicate %}<span class="badge bg-warning ms-1">DUP</span>{% endif %}
+          </td>
+          <td>
+            <div class="text-truncate" style="max-width: 200px;" title="{{ buyer.company_name }}">{{ buyer.company_name or '—' }}</div>
+          </td>
+          <td>
+            {% if buyer.website %}
+              <a href="{{ buyer.website }}" target="_blank" class="btn btn-sm btn-link text-decoration-none p-0" title="{{ buyer.website }}">
+                <i class="bi bi-box-arrow-up-right me-1"></i>Visit
+              </a>
+            {% else %}
+              <span class="text-muted">—</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if buyer.country %}
+              <span class="badge bg-light text-dark border"><i class="bi bi-geo-alt me-1"></i>{{ buyer.country }}</span>
+            {% else %}
+              <span class="text-muted">—</span>
+            {% endif %}
+          </td>
+          <td>
+            <span class="badge source-badge source-{{ buyer.source_platform }}">{{ buyer.source_platform }}</span>
+          </td>
+          <td>
+            <span class="badge status-badge status-{{ buyer.email_status }}">{{ buyer.email_status }}</span>
+          </td>
+          <td>
+            <span class="badge type-badge type-{{ buyer.buyer_type }}">{{ buyer.buyer_type }}</span>
+          </td>
+          <td class="text-muted small">{{ buyer.created_at.strftime('%d %b %Y') if buyer.created_at else '—' }}</td>
+          <td>
+            <button class="btn btn-ghost btn-sm btn-delete" data-id="{{ buyer.id }}" title="Delete">
+              <i class="bi bi-trash text-danger"></i>
+            </button>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="10" class="text-center py-5 text-muted">
+            <i class="bi bi-inbox fs-2 d-block mb-2"></i>No buyers found. Run a search first.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  {% if pagination.pages > 1 %}
+  <div class="d-flex justify-content-between align-items-center px-4 py-3">
+    <span class="text-muted small">
+      Showing {{ pagination.first }} – {{ pagination.last }} of {{ pagination.total }}
+    </span>
+    <nav>
+      <ul class="pagination pagination-sm mb-0">
+        {% if pagination.has_prev %}
+          <li class="page-item">
+            <a class="page-link" href="{{ url_for('buyers.index', page=pagination.prev_num, q=search, country=country, status=status, buyer_type=buyer_type) }}">
+              <i class="bi bi-chevron-left"></i>
+            </a>
+          </li>
+        {% endif %}
+        {% for p in pagination.iter_pages(left_edge=2, right_edge=2, left_current=2, right_current=2) %}
+          {% if p %}
+            <li class="page-item {% if p == pagination.page %}active{% endif %}">
+              <a class="page-link" href="{{ url_for('buyers.index', page=p, q=search, country=country, status=status, buyer_type=buyer_type) }}">{{ p }}</a>
+            </li>
+          {% else %}
+            <li class="page-item disabled"><span class="page-link">…</span></li>
+          {% endif %}
+        {% endfor %}
+        {% if pagination.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="{{ url_for('buyers.index', page=pagination.next_num, q=search, country=country, status=status, buyer_type=buyer_type) }}">
+              <i class="bi bi-chevron-right"></i>
+            </a>
+          </li>
+        {% endif %}
+      </ul>
+    </nav>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/buyers.js') }}"></script>
+{% endblock %}

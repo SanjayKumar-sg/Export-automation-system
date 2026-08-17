@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}Attachments — Export Automation System{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item active">Attachments</li>{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Attachment Manager</h1>
+    <p class="page-subtitle">Upload company presentations for email campaigns (Max {{ max_mb }} MB)</p>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Upload Panel -->
+  <div class="col-lg-4">
+    <div class="card-glass p-4">
+      <h6 class="section-title mb-3"><i class="bi bi-cloud-upload me-2"></i>Upload File</h6>
+
+      <div class="upload-zone" id="uploadZone">
+        <i class="bi bi-file-earmark-arrow-up fs-2 mb-2 text-muted"></i>
+        <p class="text-muted small mb-1">Drag &amp; drop or click to browse</p>
+        <p class="text-muted" style="font-size:.75rem">PDF, PPTX, DOCX up to {{ max_mb }} MB</p>
+        <input type="file" id="fileInput" class="d-none" accept=".pdf,.pptx,.docx"/>
+      </div>
+
+      <div class="mb-3 mt-3">
+        <label class="form-label fw-semibold">Description (optional)</label>
+        <input type="text" class="form-control" id="fileDesc" placeholder="Company presentation Q3 2025"/>
+      </div>
+
+      <div id="uploadProgress" class="d-none mb-3">
+        <div class="progress" style="height:8px">
+          <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+               style="width:100%"></div>
+        </div>
+        <p class="text-muted small mt-1">Uploading…</p>
+      </div>
+
+      <button class="btn btn-primary w-100" id="btnUpload" disabled>
+        <i class="bi bi-upload me-2"></i>Upload
+      </button>
+    </div>
+  </div>
+
+  <!-- Attachments List -->
+  <div class="col-lg-8">
+    <div class="card-glass p-4">
+      <h6 class="section-title mb-3"><i class="bi bi-paperclip me-2"></i>Uploaded Files</h6>
+      <div id="attachmentList">
+        {% if attachments %}
+        <div class="table-responsive">
+          <table class="table align-middle mb-0">
+            <thead><tr><th>File</th><th>Type</th><th>Size</th><th>Uploaded</th><th>Actions</th></tr></thead>
+            <tbody>
+              {% for att in attachments %}
+              <tr data-id="{{ att.id }}">
+                <td>
+                  <i class="bi bi-file-earmark-{{ 'pdf text-danger' if att.extension == 'pdf' else 'ppt text-warning' if att.extension == 'pptx' else 'word text-info' }} me-2"></i>
+                  {{ att.original_filename }}
+                  {% if att.description %}<div class="text-muted small">{{ att.description }}</div>{% endif %}
+                </td>
+                <td><span class="badge bg-secondary">{{ att.extension | upper }}</span></td>
+                <td>{{ att.human_size }}</td>
+                <td class="text-muted small">{{ att.uploaded_at.strftime('%d %b %Y') if att.uploaded_at else '—' }}</td>
+                <td>
+                  <button class="btn btn-ghost btn-sm delete-att-btn" data-id="{{ att.id }}">
+                    <i class="bi bi-trash text-danger"></i>
+                  </button>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+          <i class="bi bi-folder2-open fs-2 d-block mb-2"></i>
+          No attachments yet. Upload your first file.
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const uploadZone = document.getElementById('uploadZone');
+const fileInput = document.getElementById('fileInput');
+const btnUpload = document.getElementById('btnUpload');
+
+uploadZone.addEventListener('click', () => fileInput.click());
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault(); uploadZone.classList.remove('drag-over');
+  fileInput.files = e.dataTransfer.files;
+  updateUploadBtn();
+});
+fileInput.addEventListener('change', updateUploadBtn);
+
+function updateUploadBtn() {
+  const f = fileInput.files[0];
+  if (f) {
+    uploadZone.querySelector('p').textContent = f.name;
+    btnUpload.disabled = false;
+  }
+}
+
+btnUpload.addEventListener('click', function() {
+  const file = fileInput.files[0];
+  if (!file) return;
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('description', document.getElementById('fileDesc').value);
+  document.getElementById('uploadProgress').classList.remove('d-none');
+  btnUpload.disabled = true;
+
+  fetch('{{ url_for("attachments.upload") }}', {
+    method: 'POST',
+    headers: {'X-CSRFToken': getCsrfToken()},
+    body: fd
+  }).then(r=>r.json()).then(d=>{
+    document.getElementById('uploadProgress').classList.add('d-none');
+    if (d.status === 'uploaded') { showToast('File uploaded!', 'success'); location.reload(); }
+    else { showToast(d.message || 'Upload failed', 'danger'); btnUpload.disabled = false; }
+  });
+});
+
+document.querySelectorAll('.delete-att-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    if (!confirm('Delete this attachment?')) return;
+    fetch(`/attachments/${this.dataset.id}/delete`, {
+      method:'POST', headers:{'X-CSRFToken': getCsrfToken()}
+    }).then(()=>this.closest('tr').remove());
+  });
+});
+</script>
+{% endblock %}

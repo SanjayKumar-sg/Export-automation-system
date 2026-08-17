@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+{% block title %}Settings — Export Automation System{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item active">Settings</li>{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Settings</h1>
+    <p class="page-subtitle">Configure the system, SMTP, Gemini API, and preferences</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('settings.export') }}" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-upload me-1"></i>Export Settings
+    </a>
+    <button class="btn btn-primary btn-sm" id="btnSaveAll">
+      <i class="bi bi-floppy me-1"></i>Save All
+    </button>
+  </div>
+</div>
+
+<!-- Settings Tabs -->
+<ul class="nav nav-tabs mb-4" id="settingsTabs">
+  {% for category in grouped.keys() %}
+    <li class="nav-item">
+      <a class="nav-link {% if loop.first %}active{% endif %}"
+         data-bs-toggle="tab" href="#tab_{{ category }}">
+        {{ category | capitalize }}
+      </a>
+    </li>
+  {% endfor %}
+  <li class="nav-item">
+    <a class="nav-link" data-bs-toggle="tab" href="#tab_tools">Tools</a>
+  </li>
+</ul>
+
+<div class="tab-content">
+  {% for category, settings_list in grouped.items() %}
+  <div class="tab-pane fade {% if loop.first %}show active{% endif %}" id="tab_{{ category }}">
+    <div class="card-glass p-4">
+      <div class="row g-3">
+        {% for setting in settings_list %}
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">
+            {{ setting.key | replace('_', ' ') | title }}
+            {% if setting.is_sensitive %}
+              <i class="bi bi-lock-fill text-warning ms-1" title="Sensitive"></i>
+            {% endif %}
+          </label>
+          {% if setting.value_type == 'bool' %}
+            <div class="form-check form-switch">
+              <input class="form-check-input setting-input" type="checkbox"
+                     name="{{ setting.key }}"
+                     {% if setting.get_value() %}checked{% endif %}/>
+            </div>
+          {% else %}
+            <input
+              type="{{ 'password' if setting.is_sensitive else 'text' }}"
+              class="form-control setting-input"
+              name="{{ setting.key }}"
+              value="{{ '' if setting.is_sensitive else (setting.value or '') }}"
+              {% if setting.is_sensitive %}placeholder="••••••••••••"{% endif %}
+            />
+          {% endif %}
+          {% if setting.description %}
+            <div class="form-text">{{ setting.description }}</div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+
+  <!-- Tools Tab -->
+  <div class="tab-pane fade" id="tab_tools">
+    <div class="row g-4">
+      <div class="col-md-6">
+        <div class="card-glass p-4">
+          <h6 class="section-title mb-3"><i class="bi bi-database-fill me-2"></i>Database Backup</h6>
+          <p class="text-muted small">Create a timestamped backup of the SQLite database.</p>
+          <button class="btn btn-outline-primary" id="btnBackup">
+            <i class="bi bi-save me-2"></i>Create Backup
+          </button>
+          <div id="backupResult" class="mt-2"></div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card-glass p-4">
+          <h6 class="section-title mb-3"><i class="bi bi-upload me-2"></i>Import Settings</h6>
+          <p class="text-muted small">Import settings from a previously exported JSON file.</p>
+          <form id="importForm">
+            <input type="file" class="form-control mb-2" id="settingsFile" accept=".json"/>
+            <button type="button" class="btn btn-outline-secondary" id="btnImport">
+              <i class="bi bi-upload me-2"></i>Import
+            </button>
+          </form>
+          <div id="importResult" class="mt-2"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('btnSaveAll').addEventListener('click', function() {
+  const inputs = document.querySelectorAll('.setting-input');
+  const data = {};
+  inputs.forEach(inp => {
+    if (inp.type === 'checkbox') {
+      data[inp.name] = inp.checked ? 'true' : 'false';
+    } else if (inp.value && inp.value !== '••••••••••••') {
+      data[inp.name] = inp.value;
+    }
+  });
+  fetch('{{ url_for("settings.save") }}', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json','X-CSRFToken': getCsrfToken()},
+    body: JSON.stringify(data)
+  }).then(r=>r.json()).then(d=>{
+    showToast('Settings saved!', 'success');
+  });
+});
+
+document.getElementById('btnBackup').addEventListener('click', function() {
+  fetch('{{ url_for("settings.backup_db") }}', {
+    method:'POST', headers:{'X-CSRFToken': getCsrfToken()}
+  }).then(r=>r.json()).then(d=>{
+    document.getElementById('backupResult').innerHTML =
+      d.status === 'ok'
+        ? `<div class="alert alert-success py-1 small mt-2">Backup saved: ${d.file}</div>`
+        : `<div class="alert alert-danger py-1 small mt-2">${d.error}</div>`;
+  });
+});
+
+document.getElementById('btnImport').addEventListener('click', function() {
+  const file = document.getElementById('settingsFile').files[0];
+  if (!file) return;
+  const fd = new FormData();
+  fd.append('settings_file', file);
+  fetch('{{ url_for("settings.import_settings") }}', {
+    method:'POST', headers:{'X-CSRFToken': getCsrfToken()}, body: fd
+  }).then(r=>r.json()).then(d=>{
+    document.getElementById('importResult').innerHTML =
+      `<div class="alert alert-success py-1 small mt-2">Imported ${d.count} settings.</div>`;
+  });
+});
+</script>
+{% endblock %}
