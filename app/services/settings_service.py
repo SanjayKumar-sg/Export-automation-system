@@ -26,7 +26,8 @@ DEFAULT_SETTINGS: List[Dict[str, Any]] = [
     {"key": "gemini_api_key",     "value": "",               "value_type": "string",  "category": "ai",        "description": "Gemini API key",                 "is_sensitive": True},
     {"key": "groq_api_key",       "value": "",               "value_type": "string",  "category": "ai",        "description": "Secondary Groq API key",         "is_sensitive": True},
     {"key": "serper_api_key",     "value": "",               "value_type": "string",  "category": "search",    "description": "Serper (Google Search) API key", "is_sensitive": True},
-    {"key": "gemini_model",       "value": "gemini-1.5-flash","value_type": "string", "category": "ai",        "description": "Gemini model name"},
+    {"key": "gemini_model",       "value": "gemini-3.5-flash","value_type": "string", "category": "ai",        "description": "Gemini model name"},
+    {"key": "groq_model",         "value": "qwen/qwen3.6-27b",   "value_type": "string", "category": "ai",        "description": "Groq model name"},
     {"key": "gemini_batch_size",  "value": "20",             "value_type": "int",     "category": "ai",        "description": "Classification batch size"},
     # UI
     {"key": "theme",              "value": "dark",           "value_type": "string",  "category": "ui",        "description": "UI theme: dark | light"},
@@ -54,7 +55,7 @@ class SettingsService:
                     category=s.get("category", "general"),
                     description=s.get("description"),
                     is_sensitive=s.get("is_sensitive", False),
-                )
+                )  # type: ignore
                 db.session.add(setting)
         db.session.commit()
 

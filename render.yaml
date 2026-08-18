@@ -1,0 +1,33 @@
+services:
+  # The PostgreSQL Database
+  - type: psql
+    name: export-automation-db
+    plan: free # Change to starter/standard for production
+    ipAllowList: [] # Allows access only from Render services
+
+  # The Flask Application
+  - type: web
+    name: export-automation-api
+    env: python
+    plan: free # Change to starter/standard for production
+    buildCommand: "bash build.sh"
+    startCommand: "gunicorn run:app"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0 # Render will use this Python version
+      - key: DATABASE_URL
+        fromDatabase:
+          name: export-automation-db
+          property: connectionString
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: WTF_CSRF_ENABLED
+        value: "True"
+      - key: GMAIL_SENDER
+        sync: false # Set manually in Render Dashboard
+      - key: GMAIL_APP_PASSWORD
+        sync: false # Set manually in Render Dashboard
+      - key: GEMINI_API_KEY
+        sync: false # Set manually in Render Dashboard

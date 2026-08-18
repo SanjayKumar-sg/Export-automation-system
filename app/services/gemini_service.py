@@ -60,10 +60,11 @@ Buyer Information:
 - Source: {source}
 """
 
-    def __init__(self, api_key: str, model_name: str = "gemini-1.5-flash", groq_api_key: str = ""):
+    def __init__(self, api_key: str, model_name: str = "gemini-3.5-flash", groq_api_key: str = "", groq_model_name: str = "qwen/qwen3.6-27b"):
         self.api_key = api_key
         self.groq_api_key = groq_api_key
         self.model_name = model_name
+        self.groq_model_name = groq_model_name
         self._model = None
         self._groq_client = None
         self._init_models()
@@ -111,19 +112,36 @@ Buyer Information:
 
                 # Prefer Groq if available (since the user requested it specifically), otherwise Gemini
                 if self._groq_client:
-                    response = self._groq_client.chat.completions.create(
-                        model="llama-3.1-8b-instant",
-                        messages=[{"role": "user", "content": prompt}],
-                        temperature=0,
-                        response_format={"type": "json_object"}
-                    )
-                    text = response.choices[0].message.content.strip()
-                    if response.usage:
-                        token_info = {
-                            "prompt_tokens": response.usage.prompt_tokens,
-                            "response_tokens": response.usage.completion_tokens,
-                            "total_tokens": response.usage.total_tokens,
-                        }
+                    try:
+                        response = self._groq_client.chat.completions.create(
+                            model=self.groq_model_name,
+                            messages=[{"role": "user", "content": prompt}],
+                            temperature=0,
+                            response_format={"type": "json_object"}
+                        )
+                        text = response.choices[0].message.content.strip()
+                        if response.usage:
+                            token_info = {
+                                "prompt_tokens": response.usage.prompt_tokens,
+                                "response_tokens": response.usage.completion_tokens,
+                                "total_tokens": response.usage.total_tokens,
+                            }
+                    except Exception as e:
+                        logger.warning("Groq API error, falling back to Gemini: %s", e)
+                        if self._model:
+                            response = self._model.generate_content(prompt)
+                            text = response.text.strip()
+                            try:
+                                meta = response.usage_metadata
+                                token_info = {
+                                    "prompt_tokens": meta.prompt_token_count,
+                                    "response_tokens": meta.candidates_token_count,
+                                    "total_tokens": meta.total_token_count,
+                                }
+                            except Exception:
+                                pass
+                        else:
+                            raise e
                 elif self._model:
                     response = self._model.generate_content(prompt)
                     text = response.text.strip()
@@ -165,13 +183,21 @@ Buyer Information:
 
         try:
             if self._groq_client:
-                response = self._groq_client.chat.completions.create(
-                    model="llama-3.1-8b-instant",
-                    messages=[{"role": "user", "content": prompt}],
-                    temperature=0.3,
-                    response_format={"type": "json_object"}
-                )
-                text = response.choices[0].message.content.strip()
+                try:
+                    response = self._groq_client.chat.completions.create(
+                        model=self.groq_model_name,
+                        messages=[{"role": "user", "content": prompt}],
+                        temperature=0.3,
+                        response_format={"type": "json_object"}
+                    )
+                    text = response.choices[0].message.content.strip()
+                except Exception as e:
+                    logger.warning("Groq API error in domains, falling back to Gemini: %s", e)
+                    if self._model:
+                        response = self._model.generate_content(prompt)
+                        text = response.text.strip()
+                    else:
+                        raise e
             elif self._model:
                 response = self._model.generate_content(prompt)
                 text = response.text.strip()
@@ -222,10 +248,11 @@ Buyer Information:
             
             api_key = SettingsService.get("gemini_api_key") or ca.config.get("GEMINI_API_KEY", "")
             groq_api_key = SettingsService.get("groq_api_key") or ca.config.get("GROQ_API_KEY", "")
-            model_name = SettingsService.get("gemini_model") or ca.config.get("GEMINI_MODEL", "gemini-1.5-flash")
+            model_name = SettingsService.get("gemini_model") or ca.config.get("GEMINI_MODEL", "gemini-3.5-flash")
+            groq_model_name = SettingsService.get("groq_model") or ca.config.get("GROQ_MODEL", "qwen/qwen3.6-27b")
             max_retries = ca.config.get("GEMINI_MAX_RETRIES", 3)
 
-            service = GeminiService(api_key=api_key, model_name=model_name, groq_api_key=groq_api_key)
+            service = GeminiService(api_key=api_key, model_name=model_name, groq_api_key=groq_api_key, groq_model_name=groq_model_name)
 
             # Get unclassified valid buyers
             buyers = Buyer.query.filter(
@@ -260,7 +287,7 @@ Buyer Information:
                         response_tokens=result.get("response_tokens", 0),
                         total_tokens=result.get("total_tokens", 0),
                         status="success",
-                    )
+                    )  # type: ignore
                     db.session.add(cl)
 
                     with _classify_lock:
@@ -274,7 +301,7 @@ Buyer Information:
                         intent_level="unknown",
                         status="failed",
                         error_message="Max retries exceeded",
-                    )
+                    )  # type: ignore
                     db.session.add(cl)
                     with _classify_lock:
                         _classify_state["failed"] += 1

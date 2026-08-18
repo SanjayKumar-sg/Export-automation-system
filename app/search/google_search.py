@@ -131,6 +131,7 @@ class GoogleSearchAdapter(BaseSearchAdapter):
         # Find all emails in page content
         emails_found = set(self.EMAIL_RE.findall(text))
 
+        from app.search.country_utils import infer_country
         for email in emails_found:
             # Skip obvious false positives
             if not self._is_valid_email(email):
@@ -139,6 +140,7 @@ class GoogleSearchAdapter(BaseSearchAdapter):
                 email=email,
                 company_name=title or domain,
                 website=f"https://{domain}",
+                country=infer_country(email=email, website=f"https://{domain}", text=title or text, company_name=title),
                 source_platform=self.SOURCE_NAME,
                 source_url=url,
                 search_keyword=self.keyword,

@@ -121,6 +121,7 @@ class WebsiteSearchAdapter(BaseSearchAdapter):
             except Exception:
                 continue
 
+        from app.search.country_utils import infer_country
         for email in all_emails:
             if not self._is_valid_email(email):
                 continue
@@ -129,6 +130,7 @@ class WebsiteSearchAdapter(BaseSearchAdapter):
                     email=email,
                     company_name=company_name or domain,
                     website=base_url,
+                    country=infer_country(email=email, website=base_url, company_name=company_name, text=domain),
                     source_platform=self.SOURCE_NAME,
                     source_url=base_url,
                     search_keyword=self.keyword,

@@ -27,6 +27,19 @@ def index():
     status = request.args.get("status", "")
     buyer_type = request.args.get("buyer_type", "")
 
+    # Auto-fill country for existing records missing country
+    missing_country_buyers = Buyer.query.filter(
+        db.or_(Buyer.country.is_(None), Buyer.country == "", Buyer.country == "—")
+    ).all()
+    if missing_country_buyers:
+        from app.search.country_utils import infer_country
+        for b in missing_country_buyers:
+            b.country = infer_country(email=b.email, website=b.website, company_name=b.company_name)
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
     query = Buyer.query
 
     if search:

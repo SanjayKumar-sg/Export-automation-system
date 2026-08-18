@@ -8,3 +8,5 @@ logs/
 .DS_Store
 .idea/
 .vscode/
+app/assets/attachments/
+app/assets/reports/

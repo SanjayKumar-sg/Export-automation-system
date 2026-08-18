@@ -154,12 +154,15 @@ class SearchService:
                     dup.is_duplicate = True
                 continue
 
+            from app.search.country_utils import infer_country
+            country_val = rec.country or infer_country(email=email, website=rec.website, company_name=rec.company_name)
+
             buyer = Buyer(
                 email=email,
                 buyer_name=rec.buyer_name,
                 company_name=rec.company_name,
                 website=rec.website,
-                country=rec.country,
+                country=country_val,
                 phone=rec.phone,
                 source_platform=rec.source_platform,
                 source_url=rec.source_url,
