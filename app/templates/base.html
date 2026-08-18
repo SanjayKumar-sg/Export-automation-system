@@ -6,6 +6,9 @@
   <title>{% block title %}Export Automation System{% endblock %}</title>
   <meta name="description" content="{% block meta_desc %}Professional Export Automation & Email Marketing Platform{% endblock %}"/>
 
+  <!-- Favicon -->
+  <link rel="icon" href="{{ url_for('static', filename='img/logo.png') }}"/>
+
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
@@ -30,7 +33,7 @@
 <div class="sidebar" id="sidebar">
   <div class="sidebar-brand">
     <div class="brand-icon">
-      <i class="bi bi-globe2"></i>
+      <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo" style="width: 32px; height: 32px; object-fit: contain;">
     </div>
     <div class="brand-text">
       <span class="brand-title">ExportAI</span>
@@ -94,7 +97,7 @@
 
   <div class="sidebar-footer">
     <div class="d-flex align-items-center gap-2">
-      <div class="avatar-sm">{{ current_user.username[0].upper() }}</div>
+      <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Avatar" class="avatar-sm" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">
       <div>
         <div class="fw-semibold small">{{ current_user.username }}</div>
         <div class="text-muted" style="font-size:.7rem">{{ current_user.role | upper }}</div>
