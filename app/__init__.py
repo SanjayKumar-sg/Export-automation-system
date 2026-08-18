@@ -9,7 +9,11 @@ from __future__ import annotations
 
 import logging
 import os
+import mimetypes
 from logging.handlers import RotatingFileHandler
+
+mimetypes.add_type('text/css', '.css')
+mimetypes.add_type('text/javascript', '.js')
 
 from flask import Flask
 
@@ -21,6 +25,9 @@ def create_app() -> Flask:
     """Create and return the configured Flask application instance."""
 
     app = Flask(__name__, instance_relative_config=False)
+    
+    from werkzeug.middleware.proxy_fix import ProxyFix
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
     # ── Load configuration ─────────────────────────────────────────────────
     cfg = get_config()
