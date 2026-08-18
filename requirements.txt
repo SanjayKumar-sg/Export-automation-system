@@ -9,7 +9,8 @@ WTForms==3.1.2
 Werkzeug==3.0.3
 
 # Database
-SQLAlchemy==2.0.31
+SQLALCHEMY==2.0.31
+psycopg2-binary==2.9.9
 
 # HTTP / Scraping
 requests>=2.32.3

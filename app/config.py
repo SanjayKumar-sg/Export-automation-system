@@ -21,6 +21,8 @@ class Config:
     SQLALCHEMY_DATABASE_URI: str = os.environ.get(
         "DATABASE_URL", "sqlite:///export_automation.db"
     )
+    if SQLALCHEMY_DATABASE_URI.startswith("postgres://"):
+        SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace("postgres://", "postgresql://", 1)
     SQLALCHEMY_TRACK_MODIFICATIONS: bool = False
     SQLALCHEMY_ECHO: bool = False
 
