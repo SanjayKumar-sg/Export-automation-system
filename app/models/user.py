@@ -35,6 +35,9 @@ class User(UserMixin, db.Model):
         db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
     )
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
     # ── Password helpers ───────────────────────────────────────────────────
 
     def set_password(self, password: str) -> None:
