@@ -1,10 +1,10 @@
-services:
+databases:
   # The PostgreSQL Database
-  - type: psql
-    name: export-automation-db
+  - name: export-automation-db
     plan: free # Change to starter/standard for production
     ipAllowList: [] # Allows access only from Render services
 
+services:
   # The Flask Application
   - type: web
     name: export-automation-api
