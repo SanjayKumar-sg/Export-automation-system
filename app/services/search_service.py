@@ -98,6 +98,9 @@ class SearchService:
                 try:
                     adapter = AdapterClass(keyword=keyword, max_results=max_results // len(sources) + 10)
                     records = adapter.search()
+                    if hasattr(adapter, 'errors') and adapter.errors:
+                        for err in adapter.errors:
+                            SearchService._log_msg(f"{source} warning/error: {err}", level="error")
                     all_records.extend(records)
                     SearchService._log_msg(
                         f"{source}: found {len(records)} raw records"

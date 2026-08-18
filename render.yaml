@@ -31,3 +31,5 @@ services:
         sync: false # Set manually in Render Dashboard
       - key: GEMINI_API_KEY
         sync: false # Set manually in Render Dashboard
+      - key: SERPER_API_KEY
+        sync: false # Set manually in Render Dashboard
